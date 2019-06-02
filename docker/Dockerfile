@@ -1,6 +1,6 @@
 FROM openjdk:8-jdk-alpine
-COPY web-demo.jar .
+COPY service-demo.jar .
 
 EXPOSE 8080
 ENTRYPOINT ["/usr/bin/java"]
-CMD ["-jar", "web-demo.jar"]
+CMD ["-jar", "service-demo.jar"]
