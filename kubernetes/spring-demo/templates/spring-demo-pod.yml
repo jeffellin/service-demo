@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{.Release.Name}}-spring-demo
+  labels:
+    version: {{.Chart.Version}}
+    app: spring-demo
+    release: {{.Release.Name}}
+spec:
+  containers:
+  - image: harbor.ellin.net/library/spring-demo:mysql
+    imagePullPolicy: Always
+    name: spring-demo
+    env:
+    - name: SPRING_DATASOURCE_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: mysql-creds
+          key: username
+    - name: SPRING_DATASOURCE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: mysql-creds
+          key: password
+    ports:
+      - containerPort: 8080
+        name: http
+        protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.Release.Name}}-spring-demo-service
+  labels:
+    app: spring-demo
+    version: {{.Chart.Version}}
+    release: {{.Release.Name}}
+    
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    protocol: TCP
+  selector:
+    app: spring-demo  
+    version: {{.Chart.Version}}
+    release: {{.Release.Name}}

@@ -1,0 +1,125 @@
+resources:
+- name: release
+  type: s3
+  source:
+    bucket: service-releases
+    access_key_id: ((minio.user))
+    secret_access_key: ((minio.password))
+    endpoint: http://minio.ellin.net
+    regexp: release-(.*).tgz
+- name: version
+  type: semver
+  source:
+    driver: git
+    uri: git@github.com:jeffellin/service-demo.git
+    branch: version
+    file: version
+    private_key: ((private_key))
+- name: source-code
+  type: git
+  source:
+    uri: git@github.com:jeffellin/service-demo.git
+    branch: master
+    private_key: ((private_key))
+- name: config
+  type: git
+  source:
+    uri: git@github.com:jeffellin/spring-demo-helm.git
+    branch: dev
+    private_key: ((private_key))
+- name: config-updated
+  type: git
+  source:
+    uri: git@github.com:jeffellin/spring-demo-helm.git
+    branch: dev
+    private_key: ((private_key))
+- name: docker-image
+  type: docker-image
+  source:
+    repository: harbor.ellin.net:443/library/service-demo
+    username: jeff
+    password: ((harbor.password))
+    insecure_registries:
+      - harbor.ellin.net:443
+jobs:
+  - name: build-project
+    serial: true
+    plan:
+      - get: source-code
+        trigger: true
+      - get: version
+        params: {bump: minor}
+      - task: build-project
+        file: source-code/ci/tasks/maven-build-task.yml
+      - put: release
+        params:
+          file: packed-release/release-*.tgz
+      - put: version
+        params: {file: version/version}
+  - name: deploy-image
+    plan:
+      - get: release
+        passed: [build-project]
+        trigger: true
+      - task: push-to-docker
+        config:
+          inputs:
+          - name: release
+          outputs:
+          - name: docker-build
+          platform: linux
+          image_resource:
+            type: docker-image
+            source: {repository: busybox}
+          run:
+            path: sh
+            args: 
+              - -exc
+              - |
+                ls
+                ls release
+                VERSION=$(cat release/version)
+                tar xvf release/release-${VERSION}.tgz -C docker-build
+                mv docker-build/service-demo-${VERSION}.jar docker-build/service-demo.jar
+      - put: docker-image
+        params:
+          build: docker-build
+          tag_file: release/version
+          tag_as_latest: false
+  - name: update-dev-config
+    plan:
+      - get: release
+        passed: [deploy-image]
+        trigger: true
+      - get: config
+      - get: source-code
+      - task: push-versions-git
+        config:
+          inputs:
+          - name: config
+          - name: release
+          - name: source-code
+          outputs:
+          - name: config-updated
+          platform: linux
+          image_resource:
+            type: docker-image
+            source: {repository: alpine/git}
+          run:
+            path: /bin/sh
+            args:
+            - source-code/ci/tasks/update-versions.sh
+      - put: config-updated
+        params: {repository: config-updated}
+  #     - task: update-deployment
+  #       file: source-code/ci/tasks/pks-deploy-task.yml
+  #       params:
+  #         HELM_USER: ((HELM_USER))
+  #         HELM_PASSWORD: ((HELM_PASSWORD))
+  #         HELM_CA_PATH: ((HELM_CA_PATH))
+  #         HELM_URL: ((HELM_URL))
+  #         PKS_ENDPOINT: ((PKS_ENDPOINT))
+  #         PKS_USER: ((PKS_USER))
+  #         PKS_PASSWORD: ((PKS_PASSWORD))
+  #         PKS_CLUSTER: ((PKS_CLUSTER))
+     

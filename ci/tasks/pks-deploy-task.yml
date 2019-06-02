@@ -1,0 +1,30 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: harbor.ellin.net:443/library/kubernetes-resource
+    insecure_registries:
+      - harbor.ellin.net:443
+    tag: latest
+
+params:
+  PKS_ENDPOINT: ((PKS_ENDPOINT))
+  PKS_USER: ((PKS_USER))
+  PKS_PASSWORD: ((PKS_PASSWORD))
+  PKS_CLUSTER: ((PKS_CLUSTER))
+  HELM_USER: ((HELM_USER))
+  HELM_PASSWORD: ((HELM_PASSWORD))
+  HELM_CA_PATH: ((HELM_CA_PATH))
+  HELM_URL: ((HELM_URL))
+
+inputs:
+  - name: release
+  - name: source-code
+outputs:
+  - name: pks-build
+run:
+  path: /bin/bash
+  args:
+    - source-code/ci/tasks/push-pks.sh
