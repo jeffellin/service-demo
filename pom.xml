@@ -11,7 +11,7 @@
 	<groupId>com.example.ellin</groupId>
 	<artifactId>service-demo</artifactId>
 	<version>${revision}</version>
-	<name>web-demo</name>
+	<name>service-demo</name>
 	<description>Demo project for Spring Boot</description>
 
 	<properties>
