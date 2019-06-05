@@ -3,7 +3,8 @@
 set -eux
 export ROOT_FOLDER="$( pwd )"
 
-VERSION=$(cat version/version)
+VERSION=$(cat source-code/.git/ref)
+VERSION=${VERSION:0:6}
 SCRIPT_DIR=$(dirname "$0")
 M2_HOME="${ROOT_FOLDER}/.m2"
 M2_CACHE="${ROOT_FOLDER}/maven"

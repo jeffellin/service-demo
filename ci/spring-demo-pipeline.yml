@@ -7,14 +7,14 @@ resources:
     secret_access_key: ((minio.password))
     endpoint: http://minio.ellin.net
     regexp: release-(.*).tgz
-- name: version
-  type: semver
-  source:
-    driver: git
-    uri: git@github.com:jeffellin/service-demo.git
-    branch: version
-    file: version
-    private_key: ((private_key))
+# - name: version
+#   type: semver
+#   source:
+#     driver: git
+#     uri: git@github.com:jeffellin/spring-demo.git
+#     branch: version
+#     file: version
+#     private_key: ((private_key))
 - name: source-code
   type: git
   source:
@@ -47,15 +47,15 @@ jobs:
     plan:
       - get: source-code
         trigger: true
-      - get: version
-        params: {bump: minor}
+      # - get: version
+      #   params: {bump: minor}
       - task: build-project
         file: source-code/ci/tasks/maven-build-task.yml
       - put: release
         params:
           file: packed-release/release-*.tgz
-      - put: version
-        params: {file: version/version}
+      # - put: version
+      #   params: {file: version/version}
   - name: deploy-image
     plan:
       - get: release
@@ -85,7 +85,9 @@ jobs:
         params:
           build: docker-build
           tag_file: release/version
-          tag_as_latest: false
+          tag_as_latest: true
+          labels:
+            version: snapshot
   - name: update-dev-config
     plan:
       - get: release
